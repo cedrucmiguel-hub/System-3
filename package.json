@@ -1,0 +1,10 @@
+{
+  "name": "elec-rewards-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix \"Rewards System\" run dev",
+    "build": "npm --prefix \"Rewards System\" run build",
+    "preview": "npm --prefix \"Rewards System\" run preview",
+    "lint": "npm --prefix \"Rewards System\" run lint"
+  }
+}
