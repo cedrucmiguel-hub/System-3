@@ -26,6 +26,8 @@ export function Icon({ name, className = "icon" }) {
       return <svg {...common}><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 4h2l2.2 10.5h10.8l2-8H7.2" /></svg>;
     case "filter":
       return <svg {...common}><path d="M4 5h16l-6 7v6l-4 2v-8L4 5z" /></svg>;
+    case "search":
+      return <svg {...common}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
     case "sort":
       return <svg {...common}><path d="M7 17V7" /><path d="m4 10 3-3 3 3" /><path d="M17 7v10" /><path d="m14 14 3 3 3-3" /></svg>;
     case "bookmark":

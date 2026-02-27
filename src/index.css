@@ -176,6 +176,8 @@ html, body, #root {
 .row { display: flex; gap: 8px; }
 .row.between { justify-content: space-between; }
 .row.center { align-items: center; }
+.error-text { color: #dc2626; font-size: 13px; margin: 0; }
+.empty-text { color: #64748b; font-size: 14px; margin: 10px 0; }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.46); display: grid; place-items: center; z-index: 40; padding: 16px; }
 .modal-card { width: min(100%, 460px); background: #fff; border-radius: 12px; border: 1px solid var(--line); padding: 14px; }
@@ -701,5 +703,237 @@ html, body, #root {
   .sub-brand {
     font-size: 14px;
   }
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+/* Sidebar theme override: deep blue + cyan active selector */
+:root {
+  --sb-bg: #1d3d73;
+  --sb-bg-deep: #173563;
+  --sb-border: rgba(191, 219, 254, 0.28);
+  --sb-text: #eef5ff;
+  --sb-muted: #c3d3ee;
+  --sb-active: #22c7d8;
+  --sb-active-deep: #19bfd1;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, var(--sb-bg) 0%, var(--sb-bg-deep) 100%);
+  border-right: 1px solid var(--sb-border);
+}
+
+.logo-wrap {
+  border-bottom: 1px solid var(--sb-border);
+}
+
+.logo {
+  background: #0ea5e9;
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35);
+}
+
+.brand {
+  color: #f3f8ff;
+}
+
+.sub-brand {
+  color: var(--sb-muted);
+}
+
+.member-mini-card {
+  background: rgba(23, 53, 99, 0.65);
+  border: 1px solid var(--sb-border);
+}
+
+.member-name {
+  color: #f1f6ff;
+}
+
+.member-meta {
+  color: var(--sb-muted);
+}
+
+.sidebar-nav {
+  gap: 8px;
+}
+
+.nav-item {
+  color: var(--sb-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.nav-item:hover {
+  background: rgba(34, 199, 216, 0.24);
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, var(--sb-active) 0%, var(--sb-active-deep) 100%);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 14px rgba(6, 182, 212, 0.25);
+}
+
+.nav-item .btn-icon,
+.nav-item .icon-sm {
+  color: currentColor;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--sb-border);
+  color: var(--sb-muted);
+}
+
+/* Requested palette: white background + navy sidebar + clinical teal active selector */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --sb-bg: #1a2b47;
+  --sb-bg-deep: #1a2b47;
+  --sb-border: rgba(255, 255, 255, 0.12);
+  --sb-text: #eaf2ff;
+  --sb-muted: #b8c8de;
+  --sb-active: #00a3ad;
+  --sb-active-deep: #00a3ad;
+}
+
+html,
+body,
+#root,
+.app-shell,
+.main-area {
+  background: #ffffff;
+}
+
+.topbar {
+  background: #ffffff;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.topbar-title {
+  color: #0f172a;
+}
+
+.topbar-mini {
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.sidebar {
+  background: #1a2b47;
+  border-right: 1px solid var(--sb-border);
+}
+
+.logo-wrap,
+.sidebar-footer {
+  border-color: var(--sb-border);
+}
+
+.brand {
+  color: #ffffff;
+}
+
+.sub-brand,
+.member-meta,
+.sidebar-footer {
+  color: var(--sb-muted);
+}
+
+.member-mini-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--sb-border);
+}
+
+.member-name,
+.nav-item {
+  color: var(--sb-text);
+}
+
+.nav-item:hover {
+  background: rgba(0, 163, 173, 0.2);
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background: #00a3ad;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+/* Final palette lock: navy primary + teal selectors + white workspace */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --blue: #1a2b47;
+  --blue-deep: #1a2b47;
+  --sb-bg: #1a2b47;
+  --sb-bg-deep: #1a2b47;
+  --sb-active: #00a3ad;
+  --sb-active-deep: #00a3ad;
+}
+
+html,
+body,
+#root,
+.app-shell,
+.main-area,
+.page-wrap {
+  background: #ffffff;
+}
+
+.sidebar {
+  background: #1a2b47;
+}
+
+.nav-item.active {
+  background: #00a3ad;
+}
+
+.btn,
+.share-btn,
+.logo,
+.tile-primary,
+.earn-hero,
+.balance-hero,
+.progress-track span {
+  background: #1a2b47;
+  border-color: #1a2b47;
+}
+
+.btn:hover,
+.share-btn:hover {
+  filter: brightness(1.08);
+}
+
+.btn:focus-visible,
+.topbar-mini:focus-visible,
+.nav-item:focus-visible,
+.select:focus,
+select:focus,
+.input:focus {
+  outline: 2px solid #00a3ad;
+  outline-offset: 2px;
+}
+
+.select,
+select {
+  border-color: #00a3ad;
+  background: #ffffff;
+}
+
+.select option,
+select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.pill.blue {
+  background: #e6f8fa;
+  color: #007a82;
 }
 

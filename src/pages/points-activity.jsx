@@ -61,18 +61,22 @@ export default function PointsActivity({ state }) {
           <span className="pill light">{filtered.length} transactions</span>
         </div>
         <div className="activity-list">
-          {filtered.map((t) => (
-            <div key={t.id} className="activity-row row-card">
-              <div>
-                <p>{t.description}</p>
-                <small>{new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} • {t.category}{t.receiptId ? ` • ${t.receiptId}` : ""}</small>
+          {filtered.length ? (
+            filtered.map((t) => (
+              <div key={t.id} className="activity-row row-card">
+                <div>
+                  <p>{t.description}</p>
+                  <small>{new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} • {t.category}{t.receiptId ? ` • ${t.receiptId}` : ""}</small>
+                </div>
+                <div className="align-right">
+                  <strong className={t.points >= 0 ? "plus" : "minus"}>{t.points > 0 ? "+" : ""}{t.points}</strong>
+                  <span className={`pill ${t.type.replace("_redeem", "")}`}>{t.type}</span>
+                </div>
               </div>
-              <div className="align-right">
-                <strong className={t.points >= 0 ? "plus" : "minus"}>{t.points > 0 ? "+" : ""}{t.points}</strong>
-                <span className={`pill ${t.type.replace("_redeem", "")}`}>{t.type}</span>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="empty-text">No transactions found.</p>
+          )}
         </div>
       </article>
     </section>

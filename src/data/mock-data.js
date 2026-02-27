@@ -1,19 +1,19 @@
 export const initialAppState = {
   profile: {
-    memberId: 'HLTH2024001',
-    fullName: 'Sarah Anderson',
-    email: 'sarah.anderson@email.com',
-    phone: '+1 (555) 123-4567',
-    tier: 'Platinum',
-    memberSince: 'January 15, 2020',
+    memberId: '',
+    fullName: '',
+    email: '',
+    phone: '',
+    tier: 'Bronze',
+    memberSince: '',
     status: 'Active',
-    points: 2475,
-    pendingPoints: 350,
-    lifetimePoints: 48920,
-    expiringPoints: 150,
-    daysUntilExpiry: 7,
-    surveysCompleted: 5,
-    profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80'
+    points: 0,
+    pendingPoints: 0,
+    lifetimePoints: 0,
+    expiringPoints: 0,
+    daysUntilExpiry: 0,
+    surveysCompleted: 0,
+    profileImage: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=300&q=80'
   },
   tasks: [
     { id: 'E001', title: 'Complete Health Profile', description: 'Add health goals, allergies, and preferences', points: 100, completed: true },
@@ -34,21 +34,5 @@ export const initialAppState = {
     { id: 'RW008', name: 'Monthly Care Pass', description: '30 days wellness benefits pass', pointsCost: 2500, category: 'voucher', imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1080&q=80', available: true }
   ],
   reservedRewardIds: [],
-  transactions: [
-    { id: '1', date: '2026-02-21', description: 'Morning Wellness Purchase', type: 'earned', points: 45, category: 'Purchase', receiptId: 'RCP-20240221-001' },
-    { id: '2', date: '2026-02-20', description: 'Points Gift to Friend', type: 'gifted', points: -100, category: 'Transfer' },
-    { id: '3', date: '2026-02-20', description: 'Pending: Online Wellness Order #12345', type: 'pending', points: 120, category: 'Purchase', receiptId: 'RCP-20240220-002' },
-    { id: '4', date: '2026-02-19', description: 'Health Meal Redemption', type: 'redeemed', points: -150, category: 'Reward' },
-    { id: '5', date: '2026-02-18', description: 'Nutrition Purchase Bundle', type: 'earned', points: 85, category: 'Purchase', receiptId: 'RCP-20240218-003' },
-    { id: '6', date: '2026-02-17', description: 'Survey Completion Bonus', type: 'earned', points: 50, category: 'Bonus' },
-    { id: '7', date: '2026-02-15', description: 'Wellness Month Special', type: 'earned', points: 200, category: 'Bonus' },
-    { id: '8', date: '2026-02-14', description: 'Fitness Purchase', type: 'earned', points: 65, category: 'Purchase', receiptId: 'RCP-20240214-004' },
-    { id: '9', date: '2026-02-12', description: 'Pending: Supplement Pre-order', type: 'pending', points: 230, category: 'Purchase' },
-    { id: '10', date: '2026-02-10', description: 'Care Voucher Redemption', type: 'redeemed', points: -120, category: 'Reward' },
-    { id: '11', date: '2026-02-08', description: 'Profile Completion Bonus', type: 'earned', points: 100, category: 'Bonus' },
-    { id: '12', date: '2026-02-05', description: 'Weekly Health Purchase', type: 'earned', points: 150, category: 'Purchase', receiptId: 'RCP-20240205-005' },
-    { id: '13', date: '2026-01-31', description: 'Points Expired - Jan 2025 Batch', type: 'expired', points: -80, category: 'System' },
-    { id: '14', date: '2026-01-28', description: 'Referral Bonus - Member Signup', type: 'earned', points: 250, category: 'Bonus' },
-    { id: '15', date: '2026-01-25', description: 'Gift from @michael_chen', type: 'earned', points: 50, category: 'Transfer' }
-  ]
+  transactions: []
 };

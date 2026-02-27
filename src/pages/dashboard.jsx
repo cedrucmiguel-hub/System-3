@@ -1,14 +1,26 @@
-﻿import { Icon } from "../components/icons";
+import { Icon } from "../components/icons";
 
 function sumBy(transactions, predicate) {
   return transactions.filter(predicate).reduce((sum, t) => sum + t.points, 0);
 }
 
-export default function Dashboard({ state, navigate, projectedBalance }) {
+export default function Dashboard({
+  state,
+  navigate,
+  projectedBalance,
+  memberSearchQuery,
+  setMemberSearchQuery,
+  searchMember,
+  memberSearchError,
+  memberLoading,
+}) {
   const { profile, transactions } = state;
   const recent = transactions.slice(0, 5);
-  const earnedThisMonth = sumBy(transactions, (t) => t.type === "earned" && t.date.startsWith("2026-02"));
-  const redeemedThisMonth = Math.abs(sumBy(transactions, (t) => (t.type === "redeemed" || t.type === "pending_redeem") && t.date.startsWith("2026-02")));
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const earnedThisMonth = sumBy(transactions, (t) => t.type === "earned" && t.date.startsWith(currentMonth));
+  const redeemedThisMonth = Math.abs(
+    sumBy(transactions, (t) => (t.type === "redeemed" || t.type === "pending_redeem") && t.date.startsWith(currentMonth))
+  );
   const pendingCount = transactions.filter((t) => t.type === "pending" || t.type === "pending_redeem").length;
   const pendingPoints = transactions
     .filter((t) => t.type === "pending" && t.points > 0)
@@ -20,6 +32,26 @@ export default function Dashboard({ state, navigate, projectedBalance }) {
         <h1>Dashboard</h1>
         <p>Welcome back, {profile.fullName.split(" ")[0]}!</p>
       </div>
+
+      <article className="panel">
+        <div className="panel-head">
+          <h3>Member Lookup</h3>
+          <span className="pill light">Live Backend Search</span>
+        </div>
+        <div className="row mt-8">
+          <input
+            className="input"
+            value={memberSearchQuery}
+            onChange={(e) => setMemberSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && searchMember()}
+            placeholder="Enter Member ID or email"
+          />
+          <button className="btn" onClick={searchMember} disabled={memberLoading}>
+            <Icon name="search" className="icon-sm" /> {memberLoading ? "Searching..." : "Search"}
+          </button>
+        </div>
+        {memberSearchError ? <p className="error-text mt-8">{memberSearchError}</p> : null}
+      </article>
 
       <div className="stats-grid four">
         <article className="tile tile-primary clickable" onClick={() => navigate("/profile")}>
@@ -90,18 +122,22 @@ export default function Dashboard({ state, navigate, projectedBalance }) {
           <button className="btn-link" onClick={() => navigate("/activity")}>View All</button>
         </div>
         <div className="activity-list">
-          {recent.map((t) => (
-            <div key={t.id} className="activity-row">
-              <div>
-                <p>{t.description}</p>
-                <small>{new Date(t.date).toLocaleDateString()} • {t.category}</small>
+          {recent.length ? (
+            recent.map((t) => (
+              <div key={t.id} className="activity-row">
+                <div>
+                  <p>{t.description}</p>
+                  <small>{new Date(t.date).toLocaleDateString()} � {t.category}</small>
+                </div>
+                <div className="align-right">
+                  <strong className={t.points >= 0 ? "plus" : "minus"}>{t.points > 0 ? "+" : ""}{t.points}</strong>
+                  <small>{t.type}</small>
+                </div>
               </div>
-              <div className="align-right">
-                <strong className={t.points >= 0 ? "plus" : "minus"}>{t.points > 0 ? "+" : ""}{t.points}</strong>
-                <small>{t.type}</small>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="empty-text">No transactions found for this member.</p>
+          )}
         </div>
       </article>
 

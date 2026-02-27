@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Root from "./root";
 import Dashboard from "./pages/dashboard";
 import EarnPoints from "./pages/earn-points";
@@ -7,9 +7,7 @@ import Rewards from "./pages/rewards";
 import Profile from "./pages/profile";
 import { initialAppState } from "./data/mock-data";
 
-const STORAGE_KEY = "health-rewards-state-v2";
-const DELAY_MS = 5000;
-const UNDO_WINDOW_MS = 5 * 60 * 1000;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 const pageMap = {
   "/": Dashboard,
@@ -23,15 +21,6 @@ function normalizePath(pathname) {
   return pageMap[pathname] ? pathname : "/";
 }
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : initialAppState;
-  } catch {
-    return initialAppState;
-  }
-}
-
 function uid(prefix = "tx") {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
@@ -42,10 +31,25 @@ function getPendingNet(transactions) {
     .reduce((sum, t) => sum + t.points, 0);
 }
 
+async function requestJson(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.status === "ERROR") {
+    throw new Error(data.message || data.details || `Request failed: ${res.status}`);
+  }
+  return data;
+}
+
 export default function App() {
   const [path, setPath] = useState(() => normalizePath(window.location.pathname));
-  const [state, setState] = useState(loadState);
+  const [state, setState] = useState(initialAppState);
   const [toast, setToast] = useState("");
+  const [memberSearchQuery, setMemberSearchQuery] = useState(initialAppState.profile.memberId);
+  const [memberSearchError, setMemberSearchError] = useState("");
+  const [memberLoading, setMemberLoading] = useState(false);
 
   useEffect(() => {
     const onPopState = () => setPath(normalizePath(window.location.pathname));
@@ -54,52 +58,48 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      setState((prev) => {
-        let changed = false;
-        let pointsChange = 0;
-
-        const nextTx = prev.transactions.map((t) => {
-          if (t.type === "pending_redeem" && t.applyAt && now >= t.applyAt) {
-            changed = true;
-            pointsChange += t.points;
-            return {
-              ...t,
-              type: "redeemed",
-              description: t.finalDescription || t.description,
-              applyAt: null,
-              finalDescription: undefined,
-            };
-          }
-          return t;
-        });
-
-        if (!changed) return prev;
-
-        return {
-          ...prev,
-          transactions: nextTx,
-          profile: {
-            ...prev.profile,
-            points: prev.profile.points + pointsChange,
-          },
-        };
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
     if (!toast) return undefined;
-    const id = setTimeout(() => setToast(""), 2400);
+    const id = setTimeout(() => setToast(""), 2600);
     return () => clearTimeout(id);
   }, [toast]);
+
+  const loadMemberDashboard = async (memberId, opts = {}) => {
+    const normalized = String(memberId || "").trim();
+    if (!normalized) throw new Error("Member ID is required.");
+
+    if (!opts.silent) {
+      setMemberLoading(true);
+      setMemberSearchError("");
+    }
+
+    try {
+      const data = await requestJson(`/api/members/${encodeURIComponent(normalized)}/dashboard`);
+      const profile = data.profile;
+      const transactions = Array.isArray(profile.transactions) ? profile.transactions : [];
+
+      setState((prev) => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          ...profile,
+          profileImage: profile.profileImage || prev.profile.profileImage,
+        },
+        transactions,
+      }));
+
+      setMemberSearchQuery(profile.memberId || normalized);
+      return profile;
+    } finally {
+      if (!opts.silent) setMemberLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!initialAppState.profile.memberId) return;
+    loadMemberDashboard(initialAppState.profile.memberId, { silent: true }).catch((error) => {
+      setMemberSearchError(`Live data unavailable. ${error.message}`);
+    });
+  }, []);
 
   const navigate = (nextPath) => {
     if (nextPath === path) return;
@@ -107,102 +107,104 @@ export default function App() {
     setPath(nextPath);
   };
 
-  const recordPurchase = (amount, options = {}) => {
+  const searchMember = async () => {
+    const q = memberSearchQuery.trim();
+    if (!q) {
+      setMemberSearchError("Please enter a member ID.");
+      return;
+    }
+
+    setMemberLoading(true);
+    setMemberSearchError("");
+
+    try {
+      const data = await requestJson(`/api/members?query=${encodeURIComponent(q)}`);
+      const members = data.members || [];
+      if (!members.length) {
+        setMemberSearchError("No member found for that search.");
+        return;
+      }
+
+      const exact =
+        members.find((m) => String(m.member_id || "").toLowerCase() === q.toLowerCase()) || members[0];
+
+      await loadMemberDashboard(exact.member_id, { silent: true });
+      setToast(`Loaded member ${exact.member_id}`);
+    } catch (error) {
+      setMemberSearchError(error.message);
+    } finally {
+      setMemberLoading(false);
+    }
+  };
+
+  const postAward = async (points, description, category, receiptId = null) => {
+    const memberId = state.profile.memberId;
+    const data = await requestJson(`/api/members/${encodeURIComponent(memberId)}/award`, {
+      method: "POST",
+      body: JSON.stringify({ points, description, category, receiptId }),
+    });
+
+    const profile = data.profile;
+    const transactions = Array.isArray(profile.transactions) ? profile.transactions : [];
+
+    setState((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        ...profile,
+        profileImage: profile.profileImage || prev.profile.profileImage,
+      },
+      transactions,
+    }));
+
+    return profile;
+  };
+
+  const recordPurchase = async (amount, options = {}) => {
     const dollars = Number(amount);
     if (!Number.isFinite(dollars) || dollars <= 0) return;
 
-    let summary = null;
+    const maxAutoApply = Math.max(0, Number(options.maxAutoApplyPoints || 0));
+    const autoApply = Boolean(options.autoApplyPoints) && maxAutoApply > 0;
+    const pointsApplied = autoApply ? Math.min(state.profile.points, Math.floor(maxAutoApply)) : 0;
+    const discount = pointsApplied / 100;
+    const netAmount = Math.max(0, dollars - discount);
+    const pointsEarned = Math.floor(netAmount * 2);
+    const receiptId = `RCP-${Date.now()}`;
 
-    setState((prev) => {
-      const maxAutoApply = Math.max(0, Number(options.maxAutoApplyPoints || 0));
-      const autoApply = Boolean(options.autoApplyPoints) && maxAutoApply > 0;
-      const pointsApplied = autoApply ? Math.min(prev.profile.points, Math.floor(maxAutoApply)) : 0;
-      const discount = pointsApplied / 100;
-      const netAmount = Math.max(0, dollars - discount);
-      const pointsEarned = Math.floor(netAmount * 2);
-      const receiptId = `RCP-${Date.now()}`;
-      const date = new Date().toISOString().slice(0, 10);
-
-      const earnTx = {
-        id: uid(),
-        date,
-        description: `Health Purchase ($${dollars.toFixed(2)})`,
-        type: "earned",
-        points: pointsEarned,
-        category: "Purchase",
-        receiptId,
-      };
-
-      const nextTx = [earnTx, ...prev.transactions];
-      if (pointsApplied > 0) {
-        nextTx.unshift({
-          id: uid(),
-          date,
-          description: `Auto-applied points at checkout (${receiptId})`,
-          type: "redeemed",
-          points: -pointsApplied,
-          category: "Payment",
-        });
-      }
-
-      const nextPoints = prev.profile.points - pointsApplied + pointsEarned;
-      summary = {
-        receiptId,
-        purchaseAmount: dollars,
-        netAmount,
-        pointsApplied,
-        pointsEarned,
-        projectedBalance: nextPoints + getPendingNet(nextTx),
-      };
-
-      return {
-        ...prev,
-        transactions: nextTx,
-        profile: {
-          ...prev.profile,
-          points: nextPoints,
-          lifetimePoints: prev.profile.lifetimePoints + pointsEarned,
-        },
-      };
-    });
-
-    if (summary) {
-      setToast(
-        summary.pointsApplied > 0
-          ? `+${summary.pointsEarned} earned, ${summary.pointsApplied} auto-applied`
-          : `+${summary.pointsEarned} points added from purchase`
-      );
+    if (pointsApplied > 0) {
+      await postAward(-pointsApplied, `Auto-applied points at checkout (${receiptId})`, "Payment", receiptId);
     }
-    return summary;
+
+    await postAward(pointsEarned, `Health Purchase ($${dollars.toFixed(2)})`, "Purchase", receiptId);
+
+    const projectedBalance = state.profile.points - pointsApplied + pointsEarned + getPendingNet(state.transactions);
+    setToast(pointsApplied > 0 ? `+${pointsEarned} earned, ${pointsApplied} auto-applied` : `+${pointsEarned} points added`);
+
+    return {
+      receiptId,
+      purchaseAmount: dollars,
+      netAmount,
+      pointsApplied,
+      pointsEarned,
+      projectedBalance,
+    };
   };
 
-  const completeTask = (taskId) => {
-    setState((prev) => {
-      const task = prev.tasks.find((t) => t.id === taskId);
-      if (!task || task.completed) return prev;
+  const completeTask = async (taskId) => {
+    const task = state.tasks.find((t) => t.id === taskId);
+    if (!task || task.completed) return;
 
-      const tx = {
-        id: uid(),
-        date: new Date().toISOString().slice(0, 10),
-        description: `${task.title} Completed`,
-        type: "earned",
-        points: task.points,
-        category: "Bonus",
-      };
+    await postAward(task.points, `${task.title} Completed`, "Bonus");
 
-      return {
-        ...prev,
-        tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, completed: true } : t)),
-        transactions: [tx, ...prev.transactions],
-        profile: {
-          ...prev.profile,
-          points: prev.profile.points + task.points,
-          lifetimePoints: prev.profile.lifetimePoints + task.points,
-          surveysCompleted:
-            taskId === "E003" ? prev.profile.surveysCompleted + 1 : prev.profile.surveysCompleted,
-        },
-      };
-    });
+    setState((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, completed: true } : t)),
+      profile: {
+        ...prev.profile,
+        surveysCompleted: taskId === "E003" ? prev.profile.surveysCompleted + 1 : prev.profile.surveysCompleted,
+      },
+    }));
 
     setToast("Task completed and points added");
   };
@@ -221,8 +223,8 @@ export default function App() {
         type: "pending_redeem",
         points: -reward.pointsCost,
         category: "Reward",
-        applyAt: Date.now() + DELAY_MS,
-        undoUntil: Date.now() + UNDO_WINDOW_MS,
+        applyAt: Date.now() + 5000,
+        undoUntil: Date.now() + 5 * 60 * 1000,
         rewardId: reward.id,
         rewardName: reward.name,
         method,
@@ -235,7 +237,7 @@ export default function App() {
       };
     });
 
-    setToast(`Redemption queued, points will be deducted in ${Math.round(DELAY_MS / 1000)}s`);
+    setToast("Redemption queued");
   };
 
   const reserveReward = (rewardId) => {
@@ -245,7 +247,6 @@ export default function App() {
         ? prev.reservedRewardIds
         : [...prev.reservedRewardIds, rewardId],
     }));
-
     setToast("Reward reserved for 24 hours");
   };
 
@@ -346,6 +347,11 @@ export default function App() {
     setState((prev) => ({ ...prev, profile: { ...prev.profile, ...partial } }));
   };
 
+  const projectedBalance = useMemo(
+    () => state.profile.points + getPendingNet(state.transactions),
+    [state.profile.points, state.transactions]
+  );
+
   const context = {
     state,
     navigate,
@@ -358,7 +364,12 @@ export default function App() {
     undoRedemption,
     updateProfile,
     setToast,
-    projectedBalance: state.profile.points + getPendingNet(state.transactions),
+    projectedBalance,
+    memberSearchQuery,
+    setMemberSearchQuery,
+    searchMember,
+    memberSearchError,
+    memberLoading,
   };
 
   const Page = pageMap[path] || Dashboard;

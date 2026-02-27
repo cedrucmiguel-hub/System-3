@@ -11,6 +11,15 @@ export default function EarnPoints({ state, recordPurchase, completeTask }) {
     return Number.isFinite(n) && n > 0 ? Math.floor(n * 2) : 0;
   }, [amount]);
 
+  const handleCheckoutAndEarn = async () => {
+    const receipt = await recordPurchase(amount, {
+      autoApplyPoints,
+      maxAutoApplyPoints: Number(maxAutoApplyPoints || 0),
+    });
+    if (receipt) setLastReceipt(receipt);
+    setAmount("");
+  };
+
   return (
     <section className="page-wrap">
       <div className="page-head">
@@ -52,14 +61,7 @@ export default function EarnPoints({ state, recordPurchase, completeTask }) {
             <input className="input" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
             <button
               className="btn"
-              onClick={() => {
-                const receipt = recordPurchase(amount, {
-                  autoApplyPoints,
-                  maxAutoApplyPoints: Number(maxAutoApplyPoints || 0),
-                });
-                if (receipt) setLastReceipt(receipt);
-                setAmount("");
-              }}
+              onClick={handleCheckoutAndEarn}
               disabled={points <= 0}
             >
               <Icon name="up" className="icon-sm" /> Checkout & Earn
