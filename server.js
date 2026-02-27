@@ -30,6 +30,9 @@ const parseBody = (req) =>
     req.on("error", reject);
   });
 
+const dbProjectRef =
+  (String(process.env.DB_USER || "").match(/^postgres\.([a-z0-9]+)/i) || [])[1] || "unknown";
+
 const toIsoDate = (value) => {
   if (!value) return "";
   const d = value instanceof Date ? value : new Date(value);
@@ -118,6 +121,34 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/") {
       const result = await pool.query("SELECT NOW() AS db_time");
       return sendJson(res, 200, { status: "OK", dbTime: result.rows[0].db_time });
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/debug/db-verification") {
+      const email = String(url.searchParams.get("email") || "").trim().toLowerCase();
+      const who = await pool.query("select current_database() as db, current_user as db_user");
+      const counts = await pool.query(`
+        select
+          (select count(*)::int from public.member_accounts) as member_count,
+          (select count(*)::int from public.auth_users) as auth_count,
+          (select count(*)::int from public.point_transactions) as tx_count
+      `);
+
+      let member = [];
+      if (email) {
+        const memberRes = await pool.query(
+          "select member_id, full_name, email from public.member_accounts where lower(email)=lower($1)",
+          [email]
+        );
+        member = memberRes.rows;
+      }
+
+      return sendJson(res, 200, {
+        status: "OK",
+        projectRefFromDbUser: dbProjectRef,
+        dbTarget: who.rows[0],
+        counts: counts.rows[0],
+        memberByEmail: member,
+      });
     }
 
     if (req.method === "POST" && url.pathname === "/api/login") {
